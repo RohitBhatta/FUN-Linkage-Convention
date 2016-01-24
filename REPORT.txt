@@ -1,0 +1,9 @@
+Describe your linkage convention
+
+- How are arguments passed
+
+- How do functions return values?
+
+- How do you maintain the proper stack alignment when calling printf?
+
+- Explain how you enforce the scope rules, in the compiler and at runtime.
