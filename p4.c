@@ -20,17 +20,6 @@ struct Entry {
 //Global struct
 struct Entry *table;
 
-/*int get(char *id) {
-    struct Entry *head = table;
-    while (head != NULL) {
-        if (strcmp(head -> name, id) == 0) {
-            return 1;
-        }
-        head = head -> next;
-    }
-    return 0;
-}*/
-
 void set(char *id) {
     int same = 0;
     struct Entry *current = (struct Entry *) malloc(sizeof(struct Entry));
@@ -67,6 +56,17 @@ void set(char *id) {
         }
     }
 }
+
+char* funcRename(char * var) {
+    if (strcmp(var, "main") == 0) {
+        return var;
+    }
+    size_t size = strlen(var) + 1;
+    char *fullName = malloc(size);
+    strcpy(fullName, "_");
+    strcat(fullName, var);
+    return fullName;
+}    
 
 int formal(Fun * p, char * s) {
     if (p != NULL) {
@@ -177,8 +177,9 @@ void myExpression (Expression * e, Fun * p) {
             }
             }
             }
+            char *newName = funcRename(e -> callName);
             printf("    call ");
-            printf("%s\n", e -> callName);
+            printf("%s\n", newName);
             if (e != NULL) {
             if (e -> callActuals != NULL) {
             for (int i = 0; i < e -> callActuals -> n; i++) {
@@ -272,8 +273,9 @@ void myStatement(Statement * s, Fun * p) {
 }
 
 void genFun(Fun * p) {
-    printf("    .global %s\n", p -> name);
-    printf("%s:\n", p -> name);
+    char *rename = funcRename(p -> name);
+    printf("    .global %s\n", rename);
+    printf("%s:\n", rename);
     printf("    push %%rbp\n");
     printf("    mov %%rsp, %%rbp\n");
     myStatement(p -> body, p);
