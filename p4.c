@@ -9,7 +9,7 @@ int elseCount = 0;
 int completeCount = 0;
 int againCount = 0;
 int finishedCount = 0;
-int paramCount = 0;
+//int paramCount = 0;
 
 //Struct
 struct Entry {
@@ -100,7 +100,7 @@ void myExpression (Expression * e, Fun * p) {
         case eVAL : {
             printf("    push %%r13\n");
             printf("    mov $");
-            printf("%ld", e -> val);
+            printf("%lu", e -> val);
             printf(", %%r13\n");
             printf("    mov %%r13, %%r15\n");
             printf("    pop %%r13\n");
@@ -165,8 +165,7 @@ void myExpression (Expression * e, Fun * p) {
             break;
         }
         case eCALL : {
-            //fprintf(stderr, "%d\nHello", paramCount);
-            for (int i = paramCount - 1; i >= 0; i--) {
+            /*for (int i = paramCount - 1; i >= 0; i--) {
                 Actuals *actual = e -> callActuals; 
                 for (int a = 0; a < i; a++) {
                     actual = actual -> rest;
@@ -178,6 +177,40 @@ void myExpression (Expression * e, Fun * p) {
             printf("%s\n", e -> callName);
             for (int i = 0; i < paramCount; i++) {
                 printf("    pop %%r15\n");
+            }*/
+            /*int paramCount = 0;
+            if (p != NULL) {
+                fprintf(stderr, "Hi");
+                fprintf(stderr, "%d\n", p -> formals -> n);
+                if (p -> formals != NULL) {
+                    fprintf(stderr, "Hey");
+                    Formals *param = p -> formals;
+                    paramCount = param -> n;
+                }
+            }
+            fprintf(stderr, "%d\nHello", paramCount);*/
+            if (e != NULL) {
+            if (e -> callActuals != NULL) {
+            for (int i = e -> callActuals -> n - 1; i >= 0; i--) {
+                Actuals *actual = e -> callActuals; 
+                for (int a = 0; a < i; a++) {
+                    actual = actual -> rest;
+                }
+                myExpression(actual -> first, p);
+                printf("    push %%r15\n");
+            }
+            }
+            }
+            printf("    call ");
+            printf("%s\n", e -> callName);
+            if (e != NULL) {
+            if (e -> callActuals != NULL) {
+            Actuals *listActuals = e -> callActuals;
+            for (int i = 0; i < e -> callActuals -> n; i++) {
+                printf("    pop %%r15\n");
+                listActuals = listActuals -> rest;
+            }
+            }
             }
             break;
         }
@@ -267,20 +300,14 @@ void myStatement(Statement * s, Fun * p) {
 void genFun(Fun * p) {
     printf("    .global %s\n", p -> name);
     printf("%s:\n", p -> name);
-    paramCount = 0;
+    /*paramCount = 0;
     if (p -> formals != NULL) {
         Formals *param = p -> formals;
         paramCount = param -> n;
-    }
+    }*/
     printf("    push %%rbp\n");
     printf("    mov %%rsp, %%rbp\n");
-    /*printf("    push %%r13\n");
-    printf("    push %%r14\n");
-    printf("    push %%r15\n");*/
     myStatement(p -> body, p);
-    /*printf("    pop %%r15\n");
-    printf("    pop %%r14\n");
-    printf("    pop %%r13\n");*/
     printf("    mov %%rbp, %%rsp\n");
     printf("    pop %%rbp\n");
     printf("    mov $0,%%rax\n");
