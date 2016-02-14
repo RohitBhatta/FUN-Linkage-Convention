@@ -69,13 +69,17 @@ void set(char *id) {
     }
 }
 
-int formals(Fun * p, char * s) {
+int formal(Fun * p, char * s) {
+    if (p != NULL) {
+    if (p -> formals != NULL) {
     Formals *myFormal = p -> formals;
     for (int i = 0; i < p -> formals -> n; i++) {
          if (strcmp(s, myFormal -> first) == 0) {
-             return ((p -> formals -> n) - (myFormal -> n) + 1);
+             return (p -> formals -> n) - (myFormal -> n) + 1;
          }
          myFormal = myFormal -> rest;
+    }
+    }
     }
     return -1;
 }
@@ -94,9 +98,9 @@ void myExpression (Expression * e) {
         case eVAR : {
             printf("    push %%r15\n");
             printf("    push %%r13\n");
-            int inside = formals(func, e -> varName);
+            int inside = formal(func, e -> varName);
             if (inside == -1) {
-                printf("    mov %%r15, %d(%%rbp)", 8 * (inside + 1));
+                printf("    mov %%r15, %d(%%rbp)\n", 8 * (inside + 1));
             }
             else {
                 set(e -> varName);
@@ -203,14 +207,15 @@ void myStatement(Statement * s, Fun * p) {
             printf("    push %%r15\n");
             func = p;
             myExpression(s -> assignValue);
-            int inside = formals(p, s -> assignName);
+            int inside = formal(p, s -> assignName);
             if (inside == -1) {
                 set(s -> assignName);
                 printf("    mov %%r15, ");
                 printf("%s\n", s -> assignName);
             }
             else {
-                printf("    mov %%r15, %d(%%rbp)", 8 * (inside + 1));
+                printf("    mov %%r15, %d(%%rbp)\n", 8 * (inside + 1));
+                printf("\n");
             }
             printf("    pop %%r15\n");
             break;
