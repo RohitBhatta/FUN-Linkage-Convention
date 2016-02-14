@@ -10,6 +10,7 @@ int completeCount = 0;
 int againCount = 0;
 int finishedCount = 0;
 int paramCount = 0;
+Fun *func;
 
 //Struct
 struct Entry {
@@ -70,15 +71,42 @@ void set(char *id) {
     //printf("%s\n", id);
 }
 
+int formals(Fun * p, char * s) {
+    Formals *myFormal = p -> formals;
+    for (int i = 0; i < p -> formals -> n; i++) {
+         if (strcmp(s, myFormal -> first) == 0) {
+             return p -> formals -> n - myFormal -> n + 1;
+         }
+         myFormal = myFormal -> rest;
+    }
+    return -1;
+}
+
 void myExpression (Expression * e) {
     switch (e -> kind) {
-        case eVAR : {
+        /*case eVAR : {
             printf("    push %%r13\n");
             printf("    mov $");
             printf("%s", e -> varName);
             printf(", %%r13\n");
             printf("    mov %%r13, %%r15\n");
             printf("    pop %%r13\n");
+            break;
+        }*/
+        case eVAR : {
+            printf("    push %%r15\n");
+            printf("    push %%r13\n");
+            int inside = formals(func, e -> varName);
+            if (inside == -1) {
+                printf("    mov %%r15, %d(%%rbp)", 8 * (inside + 1));
+            }
+            else {
+                set(e -> varName);
+                printf("    mov %%r15, ");
+                printf("%s\n", e -> varName);
+            }
+            printf("    pop %%r13\n");
+            printf("    pop %%r15\n");
             break;
         }
         case eVAL : {
@@ -149,17 +177,19 @@ void myExpression (Expression * e) {
             break;
         }
         case eCALL : {
-            //Push actuals onto stack
-            //Maybe have if statement to check for all conditions
-            //Find way to offset or push registers back to preserve stack alignment
-            Actuals *actual = e -> callActuals;
-            for (int i = 0; i < paramCount; i++) {
-                printf("    push %%r15\n");
+            for (int i = paramCount - 1; i >= 0; i--) {
+                Actuals *actual = e -> callActuals; 
+                for (int a = 0; a < i; a++) {
+                    actual = actual -> rest;
+                }
                 myExpression(actual -> first);
-                actual = actual -> rest;
+                printf("    push %%r15\n");
             }
             printf("    call ");
             printf("%s\n", e -> callName);
+            for (int i = 0; i < paramCount - 1; i++) {
+                printf("    pop %%r15\n");
+            }
             paramCount = 0;
             break;
         }
@@ -169,20 +199,28 @@ void myExpression (Expression * e) {
     }
 }
 
-void myStatement(Statement * s) {
+void myStatement(Statement * s, Fun * p) {
     switch (s -> kind) {
         case sAssignment : {
             printf("    push %%r15\n");
-            //printf("    mov ");
+            func = p;
             myExpression(s -> assignValue);
-            set(s -> assignName);
+            int inside = formals(p, s -> assignName);
+            if (inside == -1) {
+                set(s -> assignName);
+                printf("    mov %%r15, ");
+                printf("%s\n", s -> assignName);
+            }
+            else {
+                printf("    mov %%r15, %d(%%rbp)", 8 * (inside + 1));
+            }
             printf("    pop %%r15\n");
             break;
         }
         case sPrint : {
             printf("    push %%r15\n");
             myExpression(s -> printValue);
-            printf("    mov $p3_format, %%rdi\n");
+            printf("    mov $p4_format, %%rdi\n");
             printf("    mov %%r15, %%rsi\n");
             printf("    mov $0, %%rax\n");
             printf("    call printf\n");
@@ -197,10 +235,10 @@ void myStatement(Statement * s) {
             completeCount++;
             printf("    cmp $0, %%r15\n");
             printf("%s%d\n", "    je else", elseTemp);
-            myStatement(s -> ifThen);
+            myStatement(s -> ifThen, p);
             printf("%s%d\n", "    jmp complete", completeTemp);
             printf("%s%d%s\n", "    else", elseTemp, ":");
-            myStatement(s -> ifElse);
+            myStatement(s -> ifElse, p);
             printf("%s%d%s\n", "    complete", completeTemp, ":");
             break;
         } 
@@ -213,7 +251,7 @@ void myStatement(Statement * s) {
             myExpression(s -> whileCondition);
             printf("    cmp $0, %%r15\n");
             printf("%s%d\n", "    je finished", finishedTemp);
-            myStatement(s -> whileBody);
+            myStatement(s -> whileBody, p);
             printf("%s%d\n", "    jmp again", againTemp);
             printf("%s%d%s\n", "    finished", finishedTemp, ":");
             break;
@@ -221,7 +259,7 @@ void myStatement(Statement * s) {
         case sBlock : {
             Block *current = s -> block;
             while (current != NULL) {
-                myStatement(current -> first);
+                myStatement(current -> first, p);
                 current = current -> rest;
             }
             break;
@@ -237,20 +275,23 @@ void myStatement(Statement * s) {
 }
 
 void genFun(Fun * p) {
-    table = (struct Entry *) malloc(sizeof(struct Entry));
     printf("    .global %s\n", p -> name);
     printf("%s:\n", p -> name);
     if (p -> formals != NULL) {
         Formals *param = p -> formals;
         paramCount = param -> n;
     }
+    printf("    push %%rbp\n");
+    printf("    mov %%rsp, %%rbp\n");
     printf("    push %%r13\n");
     printf("    push %%r14\n");
     printf("    push %%r15\n");
-    myStatement(p -> body);
+    myStatement(p -> body, p);
     printf("    pop %%r15\n");
     printf("    pop %%r14\n");
     printf("    pop %%r13\n");
+    printf("    mov %%rbp, %%rsp\n");
+    printf("    pop %%rbp\n");
     printf("    mov $0,%%rax\n");
     printf("    ret\n");
 }
@@ -264,12 +305,13 @@ void genFuns(Funs * p) {
 
 int main(int argc, char *argv[]) {
     Funs *p = parse();
+    table = (struct Entry *) malloc(sizeof(struct Entry));
 
     printf("    .text\n");
     genFuns(p);
 
     printf("    .data\n");
-    printf("p3_format: .string\"%%d\\n\"\n");
+    printf("p4_format: .string\"%%d\\n\"\n");
     if (tableCount != 0) {
         while (table -> next != NULL) {
             printf("    ");
