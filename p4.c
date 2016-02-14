@@ -10,7 +10,6 @@ int completeCount = 0;
 int againCount = 0;
 int finishedCount = 0;
 int paramCount = 0;
-Fun *func;
 
 //Struct
 struct Entry {
@@ -71,44 +70,31 @@ void set(char *id) {
 
 int formal(Fun * p, char * s) {
     if (p != NULL) {
-    if (p -> formals != NULL) {
-    Formals *myFormal = p -> formals;
-    for (int i = 0; i < p -> formals -> n; i++) {
-         if (strcmp(s, myFormal -> first) == 0) {
-             return (p -> formals -> n) - (myFormal -> n) + 1;
-         }
-         myFormal = myFormal -> rest;
-    }
-    }
+        if (p -> formals != NULL) {
+            Formals *myFormal = p -> formals;
+            for (int i = 0; i < p -> formals -> n; i++) {
+                if (strcmp(s, myFormal -> first) == 0) {
+                    return (p -> formals -> n) - (myFormal -> n) + 1;
+                }
+                myFormal = myFormal -> rest;
+            }
+        }
     }
     return -1;
 }
 
-void myExpression (Expression * e) {
+void myExpression (Expression * e, Fun * p) {
+    if (e != NULL) {
     switch (e -> kind) {
-        /*case eVAR : {
-            printf("    push %%r13\n");
-            printf("    mov $");
-            printf("%s", e -> varName);
-            printf(", %%r13\n");
-            printf("    mov %%r13, %%r15\n");
-            printf("    pop %%r13\n");
-            break;
-        }*/
         case eVAR : {
-            printf("    push %%r15\n");
-            printf("    push %%r13\n");
-            int inside = formal(func, e -> varName);
+            int inside = formal(p, e -> varName);
             if (inside == -1) {
-                printf("    mov %%r15, %d(%%rbp)\n", 8 * (inside + 1));
+                set(e -> varName);
+                printf("    mov %s, %%r15\n", e -> varName);
             }
             else {
-                set(e -> varName);
-                printf("    mov %%r15, ");
-                printf("%s\n", e -> varName);
+                printf("    mov %d(%%rbp), %%r15\n", 8 * (inside + 1));
             }
-            printf("    pop %%r13\n");
-            printf("    pop %%r15\n");
             break;
         }
         case eVAL : {
@@ -122,91 +108,91 @@ void myExpression (Expression * e) {
         }
         case ePLUS : {
             printf("    push %%r13\n");
-            myExpression(e -> left);
+            myExpression(e -> left, p);
             printf("    pop %%r13\n");
             printf("    mov %%r15, %%r13\n");
             printf("    push %%r13\n");
-            myExpression(e -> right);
+            myExpression(e -> right, p);
             printf("    pop %%r13\n");
             printf("    add %%r13, %%r15\n");
             break;
         }
         case eMUL : {
             printf("    push %%r13\n");
-            myExpression(e -> left);
+            myExpression(e -> left, p);
             printf("    pop %%r13\n");
             printf("    mov %%r15, %%r13\n");
             printf("    push %%r13\n");
-            myExpression(e -> right);
+            myExpression(e -> right, p);
             printf("    pop %%r13\n");
             printf("    imul %%r13, %%r15\n");
             break;
         }
         case eEQ : {
-            myExpression(e -> left);
+            myExpression(e -> left, p);
             printf("    mov %%r15, %%r13\n");
-            myExpression(e -> right);
+            myExpression(e -> right, p);
             printf("    cmp %%r13, %%r15\n");
             printf("    setz %%r15b\n");
             printf("    movzx %%r15b, %%r15\n"); 
             break;
         }
         case eNE : {
-            myExpression(e -> left);
+            myExpression(e -> left, p);
             printf("    mov %%r15, %%r13\n");
-            myExpression(e -> right);
+            myExpression(e -> right, p);
             printf("    cmp %%r13, %%r15\n");
             printf("    setnz %%r15b\n");
             printf("    movzx %%r15b, %%r15\n"); 
             break;
         }
         case eLT : {
-            myExpression(e -> left);
+            myExpression(e -> left, p);
             printf("    mov %%r15, %%r13\n");
-            myExpression(e -> right);
+            myExpression(e -> right, p);
             printf("    cmp %%r15, %%r13\n");
             printf("    setl %%r15b\n");
             printf("    movzx %%r15b, %%r15\n");
             break;
         }
         case eGT : {
-            myExpression(e -> left);
+            myExpression(e -> left, p);
             printf("    mov %%r15, %%r13\n");
-            myExpression(e -> right);
+            myExpression(e -> right, p);
             printf("    cmp %%r15, %%r13\n");
             printf("    setg %%r15b\n");
             printf("    movzx %%r15b, %%r15\n");
             break;
         }
         case eCALL : {
+            //fprintf(stderr, "%d\nHello", paramCount);
             for (int i = paramCount - 1; i >= 0; i--) {
                 Actuals *actual = e -> callActuals; 
                 for (int a = 0; a < i; a++) {
                     actual = actual -> rest;
                 }
-                myExpression(actual -> first);
                 printf("    push %%r15\n");
+                myExpression(actual -> first, p);
             }
             printf("    call ");
             printf("%s\n", e -> callName);
             for (int i = 0; i < paramCount; i++) {
                 printf("    pop %%r15\n");
             }
-            paramCount = 0;
             break;
         }
         default : {
             break;
         }
     }
+    }
 }
 
 void myStatement(Statement * s, Fun * p) {
+    if (s != NULL) {
     switch (s -> kind) {
         case sAssignment : {
-            printf("    push %%r15\n");
-            func = p;
-            myExpression(s -> assignValue);
+            myExpression(s -> assignValue, p);
             int inside = formal(p, s -> assignName);
             if (inside == -1) {
                 set(s -> assignName);
@@ -215,23 +201,19 @@ void myStatement(Statement * s, Fun * p) {
             }
             else {
                 printf("    mov %%r15, %d(%%rbp)\n", 8 * (inside + 1));
-                printf("\n");
             }
-            printf("    pop %%r15\n");
             break;
         }
         case sPrint : {
-            printf("    push %%r15\n");
-            myExpression(s -> printValue);
+            myExpression(s -> printValue, p);
             printf("    mov $p4_format, %%rdi\n");
             printf("    mov %%r15, %%rsi\n");
             printf("    mov $0, %%rax\n");
             printf("    call printf\n");
-            printf("    pop %%r15\n");
             break;
         }
         case sIf : {
-            myExpression(s -> ifCondition);
+            myExpression(s -> ifCondition, p);
             int elseTemp = elseCount;
             int completeTemp = completeCount;
             elseCount++;
@@ -251,7 +233,7 @@ void myStatement(Statement * s, Fun * p) {
             againCount++;
             finishedCount++;
             printf("%s%d%s\n", "    again", againTemp, ":");
-            myExpression(s -> whileCondition);
+            myExpression(s -> whileCondition, p);
             printf("    cmp $0, %%r15\n");
             printf("%s%d\n", "    je finished", finishedTemp);
             myStatement(s -> whileBody, p);
@@ -268,7 +250,10 @@ void myStatement(Statement * s, Fun * p) {
             break;
         } 
         case sReturn : {
-            myExpression(s -> returnValue);
+            myExpression(s -> returnValue, p);
+            printf("    mov %%rbp, %%rsp\n");
+            printf("    pop %%rbp\n");
+            printf("    mov $0,%%rax\n");
             printf("    ret\n");
             break;
         } 
@@ -276,24 +261,26 @@ void myStatement(Statement * s, Fun * p) {
             break;
         }
     }
+    }
 }
 
 void genFun(Fun * p) {
     printf("    .global %s\n", p -> name);
     printf("%s:\n", p -> name);
+    paramCount = 0;
     if (p -> formals != NULL) {
         Formals *param = p -> formals;
         paramCount = param -> n;
     }
     printf("    push %%rbp\n");
     printf("    mov %%rsp, %%rbp\n");
-    printf("    push %%r13\n");
+    /*printf("    push %%r13\n");
     printf("    push %%r14\n");
-    printf("    push %%r15\n");
+    printf("    push %%r15\n");*/
     myStatement(p -> body, p);
-    printf("    pop %%r15\n");
+    /*printf("    pop %%r15\n");
     printf("    pop %%r14\n");
-    printf("    pop %%r13\n");
+    printf("    pop %%r13\n");*/
     printf("    mov %%rbp, %%rsp\n");
     printf("    pop %%rbp\n");
     printf("    mov $0,%%rax\n");
