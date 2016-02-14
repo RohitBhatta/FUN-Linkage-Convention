@@ -67,15 +67,13 @@ void set(char *id) {
             tableCount++;
         }
     }
-    //printf("    mov %%r15, ");
-    //printf("%s\n", id);
 }
 
 int formals(Fun * p, char * s) {
     Formals *myFormal = p -> formals;
     for (int i = 0; i < p -> formals -> n; i++) {
          if (strcmp(s, myFormal -> first) == 0) {
-             return p -> formals -> n - myFormal -> n + 1;
+             return (p -> formals -> n) - ((myFormal -> n) + 1);
          }
          myFormal = myFormal -> rest;
     }
@@ -187,7 +185,7 @@ void myExpression (Expression * e) {
             }
             printf("    call ");
             printf("%s\n", e -> callName);
-            for (int i = 0; i < paramCount - 1; i++) {
+            for (int i = 0; i < paramCount; i++) {
                 printf("    pop %%r15\n");
             }
             paramCount = 0;
