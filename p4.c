@@ -20,7 +20,7 @@ struct Entry {
 //Global struct
 struct Entry *table;
 
-int get(char *id) {
+/*int get(char *id) {
     struct Entry *head = table;
     while (head != NULL) {
         if (strcmp(head -> name, id) == 0) {
@@ -29,7 +29,7 @@ int get(char *id) {
         head = head -> next;
     }
     return 0;
-}
+}*/
 
 void set(char *id) {
     int same = 0;
@@ -165,30 +165,6 @@ void myExpression (Expression * e, Fun * p) {
             break;
         }
         case eCALL : {
-            /*for (int i = paramCount - 1; i >= 0; i--) {
-                Actuals *actual = e -> callActuals; 
-                for (int a = 0; a < i; a++) {
-                    actual = actual -> rest;
-                }
-                printf("    push %%r15\n");
-                myExpression(actual -> first, p);
-            }
-            printf("    call ");
-            printf("%s\n", e -> callName);
-            for (int i = 0; i < paramCount; i++) {
-                printf("    pop %%r15\n");
-            }*/
-            /*int paramCount = 0;
-            if (p != NULL) {
-                fprintf(stderr, "Hi");
-                fprintf(stderr, "%d\n", p -> formals -> n);
-                if (p -> formals != NULL) {
-                    fprintf(stderr, "Hey");
-                    Formals *param = p -> formals;
-                    paramCount = param -> n;
-                }
-            }
-            fprintf(stderr, "%d\nHello", paramCount);*/
             if (e != NULL) {
             if (e -> callActuals != NULL) {
             for (int i = e -> callActuals -> n - 1; i >= 0; i--) {
@@ -205,10 +181,8 @@ void myExpression (Expression * e, Fun * p) {
             printf("%s\n", e -> callName);
             if (e != NULL) {
             if (e -> callActuals != NULL) {
-            Actuals *listActuals = e -> callActuals;
             for (int i = 0; i < e -> callActuals -> n; i++) {
-                printf("    pop %%r15\n");
-                listActuals = listActuals -> rest;
+                printf("    pop %%r14\n");
             }
             }
             }
@@ -300,11 +274,6 @@ void myStatement(Statement * s, Fun * p) {
 void genFun(Fun * p) {
     printf("    .global %s\n", p -> name);
     printf("%s:\n", p -> name);
-    /*paramCount = 0;
-    if (p -> formals != NULL) {
-        Formals *param = p -> formals;
-        paramCount = param -> n;
-    }*/
     printf("    push %%rbp\n");
     printf("    mov %%rsp, %%rbp\n");
     myStatement(p -> body, p);
