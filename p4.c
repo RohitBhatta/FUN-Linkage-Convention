@@ -73,7 +73,7 @@ int formals(Fun * p, char * s) {
     Formals *myFormal = p -> formals;
     for (int i = 0; i < p -> formals -> n; i++) {
          if (strcmp(s, myFormal -> first) == 0) {
-             return (p -> formals -> n) - ((myFormal -> n) + 1);
+             return ((p -> formals -> n) - (myFormal -> n) + 1);
          }
          myFormal = myFormal -> rest;
     }
@@ -263,7 +263,8 @@ void myStatement(Statement * s, Fun * p) {
             break;
         } 
         case sReturn : {
-            printf("    mov %%r15, %%rax\n");
+            myExpression(s -> returnValue);
+            printf("    ret\n");
             break;
         } 
         default : {
@@ -303,9 +304,8 @@ void genFuns(Funs * p) {
 
 int main(int argc, char *argv[]) {
     Funs *p = parse();
-    table = (struct Entry *) malloc(sizeof(struct Entry));
-
     printf("    .text\n");
+    table = (struct Entry *) malloc(sizeof(struct Entry));
     genFuns(p);
 
     printf("    .data\n");
