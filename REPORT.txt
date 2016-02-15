@@ -2,8 +2,22 @@ Describe your linkage convention
 
 - How are arguments passed
 
+I passed in arguments by pushing the actual arguments onto the stack. I traversed the linked list of actual parameters in reverse order so that I could determine how many parameters were actually needed, and then took the first n (n being the necessary parameters) parameters. I made sure to pop the same amount of times that I pushed but into a different register, so values did not get clobbered up.
+
+
+
 - How do functions return values?
+
+Functions returned values when the myStatement function recognized a sReturn enum. First, myExpression was called to evaluate the expression returnValue. Next, I moved the base pointer back to the stack pointer and popped the base pointer. Finally, I moved the immediate value of 0 to %rax and called ret, which officially terminates a function in Assembly x86.
+
+
 
 - How do you maintain the proper stack alignment when calling printf?
 
+The easiest way to not get caught up by stack alignment for me was simply just setting the value in %rax to 0 each time printf was called. This prevented any code breaking resulting from a call to printf.
+
+
+
 - Explain how you enforce the scope rules, in the compiler and at runtime.
+
+There were two types of variables we had to deal with, local and global variables. Local variables were pushed onto the stack because they were only defined on the scope of that function and were to be rid of once the function was terminated. Global variables on the other hand were dealt with by adding data sections for each of them since they lasted the liftime of the program. Appropriate space needed to be accounted for in the Assembly x86 language so the values could be stored and accessed.

@@ -3,13 +3,13 @@
 #include <string.h>
 #include "parser.h"
 
+//Global variables
 int tableCount = 0;
 int first = 0;
 int elseCount = 0;
 int completeCount = 0;
 int againCount = 0;
 int finishedCount = 0;
-//int paramCount = 0;
 
 //Struct
 struct Entry {
@@ -20,6 +20,7 @@ struct Entry {
 //Global struct
 struct Entry *table;
 
+//Adds variable to linked list
 void set(char *id) {
     int same = 0;
     struct Entry *current = (struct Entry *) malloc(sizeof(struct Entry));
@@ -57,6 +58,7 @@ void set(char *id) {
     }
 }
 
+//Renames functions to deal with reserved names in Assembly x86
 char* funcRename(char * var) {
     if (strcmp(var, "main") == 0) {
         return var;
@@ -68,6 +70,7 @@ char* funcRename(char * var) {
     return fullName;
 }    
 
+//Returns the index of the variable on the stack if it's local, or -1 if it's global.
 int formal(Fun * p, char * s) {
     if (p != NULL) {
         if (p -> formals != NULL) {
@@ -83,6 +86,7 @@ int formal(Fun * p, char * s) {
     return -1;
 }
 
+//Handles expression enums
 void myExpression (Expression * e, Fun * p) {
     if (e != NULL) {
     switch (e -> kind) {
@@ -196,6 +200,7 @@ void myExpression (Expression * e, Fun * p) {
     }
 }
 
+//Handles statement enums
 void myStatement(Statement * s, Fun * p) {
     if (s != NULL) {
     switch (s -> kind) {
